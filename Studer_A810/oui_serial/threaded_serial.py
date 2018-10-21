@@ -5,6 +5,7 @@
 sudo pip3 install pyyaml
 """
 
+import asyncio
 from threading import Thread
 import serial
 import time
@@ -69,7 +70,9 @@ class threaded_serial(Thread):
 
 
 # %%
-def main():
+async def main():
+    print("Threaded serial start")
+
     serial_threads = []
 
     for thread_index, port in enumerate(ports):
@@ -81,7 +84,13 @@ def main():
     for serial_thread in serial_threads:
         serial_thread.join()
 
+# %%
+def test():
+    print("Threaded serial start")
 
 # %%
 if __name__ == "__main__":
     main()
+
+
+main()

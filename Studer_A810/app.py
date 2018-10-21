@@ -5,133 +5,78 @@
 
 """
 
-import sys
-from threading import Lock
-from flask import Flask, render_template, session, request
-from flask_socketio import SocketIO, emit, join_room, leave_room, \
-    close_room, rooms, disconnect
-from oui_serial.list_serial_ports import list_serial_ports
+# WS server example that synchronizes state across clients
+
+import asyncio
+import json
+import logging
+import websockets
+import oui_serial.threaded_serial as threaded_serial
+
+logging.basicConfig()
+
+STATE = {'value': 0}
+
+USERS = set()
+
+def state_event():
+    return json.dumps({'type': 'state', **STATE})
+
+def users_event():
+    return json.dumps({'type': 'users', 'count': len(USERS)})
+
+async def notify_state():
+    if USERS:       # asyncio.wait doesn't accept an empty list
+        message = state_event()
+        await asyncio.wait([user.send(message) for user in USERS])
+
+async def notify_users():
+    if USERS:       # asyncio.wait doesn't accept an empty list
+        message = users_event()
+        await asyncio.wait([user.send(message) for user in USERS])
+
+async def register(websocket):
+    USERS.add(websocket)
+    await notify_users()
+
+async def unregister(websocket):
+    USERS.remove(websocket)
+    await notify_users()
+
+async def counter(websocket, path):
+    # register(websocket) sends user_event() to websocket
+    await register(websocket)
+    try:
+        await websocket.send(state_event())
+        async for message in websocket:
+            data = json.loads(message)
+            if data['action'] == 'minus':
+                STATE['value'] -= 1
+                await notify_state()
+            elif data['action'] == 'plus':
+                STATE['value'] += 1
+                await notify_state()
+            else:
+                logging.error(
+                    "unsupported event: {}", data)
+            print("value = {}".format(STATE['value']))
+    finally:
+        await unregister(websocket)
+
+def main():
+    # print("STARTING SERIAL")
+    # asyncio.get_event_loop().create_task(threaded_serial.main())
+    # asyncio.get_event_loop().run_forever()
+
+    print("STARTING WEBSOCKET")
+    print(f"websockets.__version__ = {websockets.__version__}")
+
+    start_server = websockets.serve(counter, '0.0.0.0', 5678)
+    asyncio.get_event_loop().run_until_complete(start_server)
+    asyncio.get_event_loop().run_forever()
 
 
-# Set the variable async_mode to "threading", "eventlet" or "gevent" to test the
-# different async modes, or leave it set to None for the application to choose
-# the best option based on installed packages.
-async_mode = None
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, async_mode=async_mode)
-thread = None
-thread_lock = Lock()
+if __name__ == "__main__":
+    main()
 
 
-def background_thread():
-    """Example of how to send server generated events to clients."""
-    count = 0
-    while True:
-        socketio.sleep(10)
-        count += 1
-        [available_serial_ports, unavailable_serial_ports] = list_serial_ports()
-
-        print("\nAVAILABLE_SERIAL_PORTS")
-        for sp in available_serial_ports:
-            print(sp)
-
-        print("\nUNAVAILABLE_SERIAL_PORTS")
-        for sp in unavailable_serial_ports:
-            print(sp)
-
-        socketio.emit('my_response',
-                      {'data': 'Server generated event', 'count': count},
-                      namespace='/test')
-
-        socketio.emit('my_response',
-                      {'data': 'Serial ports{}'.format(available_serial_ports[0]), 'count': count},
-                      namespace='/test')
-
-
-@app.route('/')
-def index():
-    return render_template('index.html', async_mode=socketio.async_mode)
-
-
-@socketio.on('my_event', namespace='/test')
-def test_message(message):
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    print("message['data'] = {}".format(message['data']))
-    print("session['receive_count'] = {}".format(session['receive_count']))
-    emit('my_response',
-         {'data': message['data'], 'count': session['receive_count']})
-
-
-@socketio.on('my_broadcast_event', namespace='/test')
-def test_broadcast_message(message):
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my_response',
-         {'data': message['data'], 'count': session['receive_count']},
-         broadcast=True)
-
-
-@socketio.on('join', namespace='/test')
-def join(message):
-    join_room(message['room'])
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my_response',
-         {'data': 'In rooms: ' + ', '.join(rooms()),
-          'count': session['receive_count']})
-
-
-@socketio.on('leave', namespace='/test')
-def leave(message):
-    leave_room(message['room'])
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my_response',
-         {'data': 'In rooms: ' + ', '.join(rooms()),
-          'count': session['receive_count']})
-
-
-@socketio.on('close_room', namespace='/test')
-def close(message):
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my_response', {'data': 'Room ' + message['room'] + ' is closing.',
-                         'count': session['receive_count']},
-         room=message['room'])
-    close_room(message['room'])
-
-
-@socketio.on('my_room_event', namespace='/test')
-def send_room_message(message):
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my_response',
-         {'data': message['data'], 'count': session['receive_count']},
-         room=message['room'])
-
-
-@socketio.on('disconnect_request', namespace='/test')
-def disconnect_request():
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my_response',
-         {'data': 'Disconnected!', 'count': session['receive_count']})
-    disconnect()
-
-
-@socketio.on('my_ping', namespace='/test')
-def ping_pong():
-    emit('my_pong')
-
-
-@socketio.on('connect', namespace='/test')
-def test_connect():
-    global thread
-    with thread_lock:
-        if thread is None:
-            thread = socketio.start_background_task(target=background_thread)
-    emit('my_response', {'data': 'Connected', 'count': 0})
-
-
-@socketio.on('disconnect', namespace='/test')
-def test_disconnect():
-    print('Client disconnected', request.sid)
-
-
-if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', debug=True)
