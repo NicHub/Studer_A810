@@ -26,6 +26,10 @@ websocket.onmessage = function(event) {
   var data = JSON.parse(event.data);
   switch(data.type) {
     case 'state':
+      if(data.value < 0)
+        value.classList.add("negative");
+      else
+        value.classList.remove("negative");
       value.textContent = data.value;
       break;
 

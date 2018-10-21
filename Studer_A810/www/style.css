@@ -27,8 +27,12 @@ body {
     color: green;
 }
 .value {
-    min-width: 2em;
+    min-width: 400px;
+    color: green;
 }
 .state {
     font-size: 2em;
+}
+.negative {
+    color: red;
 }

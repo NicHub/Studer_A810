@@ -33,6 +33,7 @@ async def notify_state():
 async def notify_users():
     if USERS:       # asyncio.wait doesn't accept an empty list
         message = users_event()
+        print(message)
         await asyncio.wait([user.send(message) for user in USERS])
 
 async def register(websocket):
@@ -57,9 +58,9 @@ async def counter(websocket, path):
                 STATE['value'] += 1
                 await notify_state()
             else:
-                logging.error(
-                    "unsupported event: {}", data)
+                logging.error(f"unsupported event: {data}")
             print("value = {}".format(STATE['value']))
+
     finally:
         await unregister(websocket)
 
@@ -75,5 +76,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
