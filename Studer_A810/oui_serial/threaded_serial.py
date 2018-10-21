@@ -70,7 +70,7 @@ class threaded_serial(Thread):
 
 
 # %%
-async def main():
+def main():
     print("Threaded serial start")
 
     serial_threads = []
@@ -91,6 +91,3 @@ def test():
 # %%
 if __name__ == "__main__":
     main()
-
-
-main()

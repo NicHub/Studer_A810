@@ -11,7 +11,7 @@ import asyncio
 import json
 import logging
 import websockets
-import oui_serial.threaded_serial as threaded_serial
+# import oui_serial.threaded_serial as threaded_serial
 
 logging.basicConfig()
 
@@ -64,9 +64,6 @@ async def counter(websocket, path):
         await unregister(websocket)
 
 def main():
-    # print("STARTING SERIAL")
-    # asyncio.get_event_loop().create_task(threaded_serial.main())
-    # asyncio.get_event_loop().run_forever()
 
     print("STARTING WEBSOCKET")
     print(f"websockets.__version__ = {websockets.__version__}")

@@ -22,6 +22,8 @@ https://alex.dzyoba.com/blog/python-import/
     sudo apt-get install python3-flask
     sudo pip3 install --upgrade pip3
     sudo pip3 install Flask-SocketIO eventlet pyyaml
+    sudo python -m pip install pyserial
+
 
     mkdir webapp && cd webapp
 
@@ -107,7 +109,3 @@ Run app
     conda install -c anaconda pyyaml
 
 eventlet pyyaml
-
-
-
-
