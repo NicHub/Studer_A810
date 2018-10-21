@@ -24,6 +24,7 @@ plus.onclick = function(event) {
 
 
 function start() {
+  console.log("Connecting websocket at " + wsurl);
   ws = null;
   ws = new WebSocket(wsurl);
 
@@ -50,25 +51,18 @@ function start() {
 
       default:
         console.error(
-          "unsupported event", data);
+          "Unsupported event", data);
     }
   };
 
-  ws.onclose = function(){
-    console.log('closed!');
-    //reconnect now
-    check_websocket();
+  ws.onclose = function() {
+    console.log('Closed!');
   };
 }
 
 setInterval(check_websocket, 1000);
-function check_websocket(){
-    if(!ws || ws.readyState == 3)
-    {
-      console.log("Trying to connect again");
-      try {
-        start();
-      } catch(e) {}
-    }
+function check_websocket() {
+  if(!ws || ws.readyState == WebSocket.CLOSED)
+    start();
 }
 
