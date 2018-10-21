@@ -1,4 +1,5 @@
 .DS_Store
 ._*
-
-
+*nogit*
+__pycache__/
+*.pyc

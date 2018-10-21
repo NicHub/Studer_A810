@@ -9,9 +9,16 @@ from threading import Thread
 import serial
 import time
 import yaml
+import sys
 
+if sys.platform == "linux":
+    ports = ["/dev/ttyACM0"]
+elif sys.platform == "darwin":
+    ports = ["/dev/cu.usbmodem1421"]
+else:
+    print("Unsuported OS")
+    sys.exit(0)
 
-ports = ["/dev/ttyACM0", "/dev/ttyACM1"]
 baud = 115200
 
 

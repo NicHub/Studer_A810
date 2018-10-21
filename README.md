@@ -14,6 +14,8 @@ https://github.com/miguelgrinberg/Flask-SocketIO
 
 https://ouilogique.com/installer-raspian-stretch/
 
+https://alex.dzyoba.com/blog/python-import/
+
 
     sudo apt-get --assume-yes update
     sudo apt-get --assume-yes dist-upgrade
@@ -93,3 +95,19 @@ Run app
     sudo pip install --upgrade pip
 
     pip install Flask-SocketIO
+
+    conda create --name rpi_websocket_conda
+    source activate rpi_websocket_conda
+    conda install -c anaconda flask
+    sudo conda install -c conda-forge flask-socketio
+    sudo conda install -c anaconda flask-socketio
+    export FLASK_APP=test_websocket.py
+
+    conda install -c conda-forge eventlet
+    conda install -c anaconda pyyaml
+
+eventlet pyyaml
+
+
+
+

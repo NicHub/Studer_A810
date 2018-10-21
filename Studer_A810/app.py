@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
+"""
+
+"""
+
+import sys
 from threading import Lock
 from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room, \
     close_room, rooms, disconnect
+from oui_serial.list_serial_ports import list_serial_ports
 
-# Set this variable to "threading", "eventlet" or "gevent" to test the
+
+# Set the variable async_mode to "threading", "eventlet" or "gevent" to test the
 # different async modes, or leave it set to None for the application to choose
 # the best option based on installed packages.
 async_mode = None
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, async_mode=async_mode)
@@ -23,8 +30,22 @@ def background_thread():
     while True:
         socketio.sleep(10)
         count += 1
+        [available_serial_ports, unavailable_serial_ports] = list_serial_ports()
+
+        print("\nAVAILABLE_SERIAL_PORTS")
+        for sp in available_serial_ports:
+            print(sp)
+
+        print("\nUNAVAILABLE_SERIAL_PORTS")
+        for sp in unavailable_serial_ports:
+            print(sp)
+
         socketio.emit('my_response',
                       {'data': 'Server generated event', 'count': count},
+                      namespace='/test')
+
+        socketio.emit('my_response',
+                      {'data': 'Serial ports{}'.format(available_serial_ports[0]), 'count': count},
                       namespace='/test')
 
 
@@ -36,6 +57,8 @@ def index():
 @socketio.on('my_event', namespace='/test')
 def test_message(message):
     session['receive_count'] = session.get('receive_count', 0) + 1
+    print("message['data'] = {}".format(message['data']))
+    print("session['receive_count'] = {}".format(session['receive_count']))
     emit('my_response',
          {'data': message['data'], 'count': session['receive_count']})
 
