@@ -26,15 +26,20 @@ def users_event():
     return json.dumps({'type': 'users', 'count': len(USERS)})
 
 async def notify_state():
-    if USERS:       # asyncio.wait doesn't accept an empty list
+    if USERS:
         message = state_event()
         await asyncio.wait([user.send(message) for user in USERS])
 
 async def notify_users():
-    if USERS:       # asyncio.wait doesn't accept an empty list
+    if USERS:
         message = users_event()
         print(message)
         await asyncio.wait([user.send(message) for user in USERS])
+
+async def notify_check_ws_speed(websocket):
+    if USERS:
+        message = json.dumps({"type": "check_ws_speed_receive", "value": 0})
+        await asyncio.wait([websocket.send(message)])
 
 async def register(websocket):
     USERS.add(websocket)
@@ -53,13 +58,16 @@ async def counter(websocket, path):
             data = json.loads(message)
             if data['action'] == 'minus':
                 STATE['value'] -= 1
+                print("value = {}".format(STATE['value']))
                 await notify_state()
             elif data['action'] == 'plus':
                 STATE['value'] += 1
+                print("value = {}".format(STATE['value']))
                 await notify_state()
+            elif data['action'] == 'check_ws_speed':
+                await notify_check_ws_speed(websocket)
             else:
                 logging.error(f"unsupported event: {data}")
-            print("value = {}".format(STATE['value']))
 
     finally:
         await unregister(websocket)
@@ -75,4 +83,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except(KeyboardInterrupt, SystemExit):
+        print("\b\b\033[K")
+        print("\nThat’s all folks")

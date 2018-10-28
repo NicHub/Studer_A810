@@ -19,6 +19,7 @@ body {
 .button {
     cursor: pointer;
     user-select: none;
+    min-width: 130px;
 }
 .minus {
     color: red;
@@ -35,4 +36,7 @@ body {
 }
 .negative {
     color: red;
+}
+.wsspeed {
+    font-size: 1em;
 }
